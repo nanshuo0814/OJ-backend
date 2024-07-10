@@ -7,23 +7,30 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nanshuo.project.common.ErrorCode;
 import com.nanshuo.project.constant.PageConstant;
 import com.nanshuo.project.exception.BusinessException;
+import com.nanshuo.project.judge.codesandbox.JudgeService;
 import com.nanshuo.project.mapper.QuestionSubmitMapper;
+import com.nanshuo.project.model.domain.Question;
 import com.nanshuo.project.model.domain.QuestionSubmit;
 import com.nanshuo.project.model.domain.User;
+import com.nanshuo.project.model.dto.question_submit.QuestionSubmitAddRequest;
 import com.nanshuo.project.model.dto.question_submit.QuestionSubmitQueryRequest;
+import com.nanshuo.project.model.enums.question.QuestionSubmitLanguageEnum;
 import com.nanshuo.project.model.enums.question.QuestionSubmitStatusEnum;
 import com.nanshuo.project.model.enums.sort.QuestionSubmitSortFieldEnums;
 import com.nanshuo.project.model.vo.question.QuestionSubmitVO;
+import com.nanshuo.project.service.QuestionService;
 import com.nanshuo.project.service.QuestionSubmitService;
 import com.nanshuo.project.service.UserService;
 import com.nanshuo.project.utils.SqlUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -37,6 +44,13 @@ public class QuestionSubmitServiceImpl extends ServiceImpl<QuestionSubmitMapper,
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private QuestionService questionService;
+
+    @Resource
+    @Lazy
+    private JudgeService judgeService;
 
     /**
      * 获取查询包装器
@@ -92,6 +106,49 @@ public class QuestionSubmitServiceImpl extends ServiceImpl<QuestionSubmitMapper,
         return questionSubmitVO;
     }
 
+    /**
+     * 提交题目
+     *
+     * @param questionSubmitAddRequest 问题提交添加请求
+     * @param loginUser                登录用户
+     * @return long
+     */
+    @Override
+    public long doQuestionSubmit(QuestionSubmitAddRequest questionSubmitAddRequest, User loginUser) {
+        // 校验编程语言是否合法
+        String language = questionSubmitAddRequest.getLanguage();
+        QuestionSubmitLanguageEnum languageEnum = QuestionSubmitLanguageEnum.getEnumByValue(language);
+        if (languageEnum == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "编程语言错误");
+        }
+        long questionId = questionSubmitAddRequest.getQuestionId();
+        // 判断实体是否存在，根据类别获取实体
+        Question question = questionService.getById(questionId);
+        if (question == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+        // 是否已提交题目
+        long userId = loginUser.getId();
+        // 每个用户串行提交题目
+        QuestionSubmit questionSubmit = new QuestionSubmit();
+        questionSubmit.setUserId(userId);
+        questionSubmit.setQuestionId(questionId);
+        questionSubmit.setCode(questionSubmitAddRequest.getCode());
+        questionSubmit.setLanguage(language);
+        // 设置初始状态
+        questionSubmit.setStatus(QuestionSubmitStatusEnum.WAITING.getValue());
+        questionSubmit.setJudgeInfo("{}");
+        boolean save = this.save(questionSubmit);
+        if (!save){
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "数据插入失败");
+        }
+        long questionSubmitId = questionSubmit.getId();
+        // 执行判题服务
+        CompletableFuture.runAsync(() -> {
+            judgeService.doJudge(questionSubmitId);
+        });
+        return questionSubmitId;
+    }
 
     /**
      * 是否为排序字段

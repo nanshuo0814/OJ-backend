@@ -149,3 +149,7 @@ email:
   mailTitle: 邮箱验证码 # 邮件标题
   content: OJ判题系统 # 邮件正文里的项目名称
   expireTime: 5 # 验证码过期时间，单位分钟
+
+# 代码沙箱配置
+codesandbox:
+  type: remote # 沙箱类型，默认远程沙箱

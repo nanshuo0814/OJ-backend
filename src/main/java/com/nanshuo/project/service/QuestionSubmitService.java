@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nanshuo.project.model.domain.QuestionSubmit;
 import com.nanshuo.project.model.domain.User;
+import com.nanshuo.project.model.dto.question_submit.QuestionSubmitAddRequest;
 import com.nanshuo.project.model.dto.question_submit.QuestionSubmitQueryRequest;
 import com.nanshuo.project.model.vo.question.QuestionSubmitVO;
 
@@ -39,4 +40,13 @@ public interface QuestionSubmitService extends IService<QuestionSubmit> {
      * @return {@link QuestionSubmitVO }
      */
     QuestionSubmitVO getQuestionSubmitVO(QuestionSubmit questionSubmit, User loginUser);
+
+    /**
+     * 提交问题
+     *
+     * @param questionSubmitAddRequest 问题提交添加请求
+     * @param loginUser                登录用户
+     * @return long
+     */
+    long doQuestionSubmit(QuestionSubmitAddRequest questionSubmitAddRequest, User loginUser);
 }

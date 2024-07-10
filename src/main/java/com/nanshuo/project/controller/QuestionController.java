@@ -12,6 +12,7 @@ import com.nanshuo.project.model.domain.QuestionSubmit;
 import com.nanshuo.project.model.domain.User;
 import com.nanshuo.project.model.dto.IdRequest;
 import com.nanshuo.project.model.dto.question.*;
+import com.nanshuo.project.model.dto.question_submit.QuestionSubmitAddRequest;
 import com.nanshuo.project.model.dto.question_submit.QuestionSubmitQueryRequest;
 import com.nanshuo.project.model.vo.question.QuestionSubmitVO;
 import com.nanshuo.project.model.vo.question.QuestionVO;
@@ -289,6 +290,25 @@ public class QuestionController {
         final User loginUser = userService.getLoginUser(request);
         // 返回脱敏信息
         return ApiResult.success(questionSubmitService.getQuestionSubmitVOPage(questionSubmitPage, loginUser));
+    }
+
+    /**
+     * 提交题目
+     *
+     * @param questionSubmitAddRequest 问题提交添加请求
+     * @param request                  请求
+     * @return 提交记录的 id
+     */
+    @Check(checkAuth = UserConstant.USER_ROLE)
+    @PostMapping("/question_submit/do")
+    public ApiResponse<Long> doQuestionSubmit(@RequestBody QuestionSubmitAddRequest questionSubmitAddRequest,
+                                               HttpServletRequest request) {
+        if (questionSubmitAddRequest == null || questionSubmitAddRequest.getQuestionId() <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        final User loginUser = userService.getLoginUser(request);
+        long questionSubmitId = questionSubmitService.doQuestionSubmit(questionSubmitAddRequest, loginUser);
+        return ApiResult.success(questionSubmitId);
     }
 
     // endregion
