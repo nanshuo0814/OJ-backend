@@ -29,7 +29,15 @@ class CodeSandBoxTest {
     void testCodeSandBoxByProxy() {
         CodeSandBox codeSandBox = CodeSandBoxFactory.newInstance(type);
         codeSandBox = new CodeSandBoxProxy(codeSandBox);
-        String code = "public class Main { public static void main(String[] args) { System.out.println(\"Hello World\"); } }";
+        String code = "public class Main {\n" +
+                "\n" +
+                "    public static void main(String[] args) {\n" +
+                "        int a = Integer.parseInt(args[0]);\n" +
+                "        int b = Integer.parseInt(args[1]);\n" +
+                "        System.out.println(\"结果:\" + a + b);\n" +
+                "    }\n" +
+                "\n" +
+                "}";
         String language = QuestionSubmitLanguageEnum.JAVA.getValue();
         List<String> inputList = Arrays.asList("1 2", "3 4");
         ExecuteCodeRequest build = ExecuteCodeRequest.builder().code(code).language(language).inputList(inputList).build();
